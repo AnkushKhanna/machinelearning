@@ -35,7 +35,8 @@ class RandomForest(sc: SparkContext) {
        .setLabelCol("indexedLabel")
        .setFeaturesCol("features")
        .setMaxBins(maxBin)
-       .setMaxDepth(3)
+       .setNumTrees(7)
+       .setMaxDepth(5)
 
      // Convert indexed labels back to original labels.
      val labelConverter = new IndexToString()
@@ -55,8 +56,5 @@ class RandomForest(sc: SparkContext) {
 
      // Train model.  This also runs the indexers.
      pipeline.fit(data)
-
-
-
    }
  }

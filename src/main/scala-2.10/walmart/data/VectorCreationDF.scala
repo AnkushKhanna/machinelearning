@@ -67,14 +67,14 @@ class VectorCreationDF(sc: SparkContext) {
       .setOutputCol("filtered")
 
     val ngram = new NGram()
-      .setInputCol("filtered")
+      .setInputCol("words")
       .setOutputCol("ngrams")
-      .setN(1)
+      .setN(2)
 
     val htf = new HashingTF()
-      .setInputCol("filtered")
+      .setInputCol("ngrams")
       .setOutputCol("hash")
-      .setNumFeatures(2000)
+      .setNumFeatures(1400)
 
     val idf = new IDF()
       .setInputCol("hash")
@@ -82,14 +82,14 @@ class VectorCreationDF(sc: SparkContext) {
 
     val normalizer = new Normalizer()
       .setInputCol("idf-features")
-      .setOutputCol("n-features")
+      .setOutputCol("features")
 
     val pca = new PCA()
       .setInputCol("n-features")
       .setOutputCol("features")
       .setK(500)
 
-    val pipeline = new Pipeline().setStages(Array(tokenizer, remover, htf, idf, normalizer, pca))
+    val pipeline = new Pipeline().setStages(Array(tokenizer, ngram,  htf, idf, normalizer))
     val model = pipeline.fit(dataFrame)
 
     model.transform(dataFrame)
