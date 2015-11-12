@@ -1,9 +1,9 @@
 package walmart
 
 import common.ml.RandomForest
-import org.apache.spark.sql.{Column, DataFrame, SaveMode}
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
-import walmart.data.{FormatResult, VectorCreationDF}
+import walmart.data.{VectorConversionToRdd, FormatResult, VectorCreationDF}
 import walmart.evaluation.WalmartEvaluator
 
 
@@ -11,13 +11,13 @@ object Start {
   def main(args: Array[String]) {
 
     val conf = new SparkConf() //
-      .set("spark.driver.maxResultSize", "3g")
+      .set("spark.driver.maxResultSize", "2g")
       //.set("spark.executor.memory", "6g")
       .setAppName("walmart")
-      .setMaster("local[2]")
-      .set("spark.driver.cores", "3")
+      .setMaster("local[5]")
+      .set("spark.driver.cores", "4")
 
-    val runningFinal = false
+    val runningFinal = true
 
     val sc = new SparkContext(conf)
 
@@ -27,39 +27,30 @@ object Start {
           new VectorCreationDF(sc).createTestVector("src/main/resources/test.csv"))
       } else {
         val train = new VectorCreationDF(sc).createTrainVector("src/main/resources/train.csv")
-        train.randomSplit(Array(0.7, 0.5))
+        train.randomSplit(Array(0.7, 0.3))
       }
 
-    //    val vectorCreation = new VectorCreation(sc)
-    //    val labelPoints = vectorCreation.createVector
-    //    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-    //    val data = sqlContext.createDataFrame(labelPoints).toDF("label", "features")
-    //
+    val conversion = new VectorConversionToRdd(sc)
+    val trainRDD = conversion.convert(trainingData)
+    val testRDD = conversion.convert(testData)
 
-   // val test = testData.drop("label")
+    println(trainRDD.count, testRDD.count)
 
-    val decisionTree = new RandomForest(sc)
-    val model = decisionTree.fit(trainingData)
-
-    testData.coalesce(1).write.format("json")
-      .mode(SaveMode.Overwrite)
-      .option("header", "true")
-      .save("src/main/resources/testData")
-
-    // Make predictions.
-    val predictions = model.transform(testData)
-
-//    predictions.coalesce(1).select("probability","probabilityWithLabel")
-//      .write.format("json")
-//      .mode(SaveMode.Overwrite)
-//      .option("header", "true")
-//      .save("src/main/resources/finalResult2")
-
-    if (!runningFinal) {
-      val evaluator = new WalmartEvaluator
-      evaluator.evaluate(predictions)
-    } else {
-      new FormatResult(sc).format(predictions)
-    }
+//    val sqlContext = new SQLContext(sc)
+//
+//
+//    val decisionTree = new RandomForest(sc)
+//    val model = decisionTree.fit(sqlContext.createDataFrame(trainRDD).toDF("label", "features"))
+//
+//    val predictions = model.transform(sqlContext.createDataFrame(testRDD).toDF("label", "features"))
+//
+//    if (!runningFinal) {
+//      val evaluator = new WalmartEvaluator
+//      evaluator.evaluate(predictions)
+//    } else {
+//      new FormatResult(sc).format(predictions)
+//    }
   }
+
+
 }
