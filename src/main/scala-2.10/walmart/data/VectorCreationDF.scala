@@ -25,8 +25,8 @@ class VectorCreationDF(sc: SparkContext) {
 
     val groupedDataFrame = dataFrame.groupBy("VisitNumber")
       .agg(
-        tripType(dataFrame.col("TripType")).as("label"),
-        concatenate(dataFrame.col("DepartmentDescription")).as("Agg-DepartmentDescription")
+        concatenate(dataFrame.col("DepartmentDescription")).as("Agg-DepartmentDescription"),
+        tripType(dataFrame.col("TripType")).as("label")
       )
 
     val features = transform(groupedDataFrame)
@@ -57,7 +57,7 @@ class VectorCreationDF(sc: SparkContext) {
       .load(path).toDF()
   }
 
-  private def transform(dataFrame: DataFrame) = {
+  private def transform(dataFrame: DataFrame): DataFrame = {
     val tokenizer = new Tokenizer()
       .setInputCol("Agg-DepartmentDescription")
       .setOutputCol("words")
