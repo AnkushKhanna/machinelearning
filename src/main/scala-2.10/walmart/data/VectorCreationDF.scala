@@ -104,7 +104,7 @@ class VectorCreationDF(sc: SparkContext) {
 
     val idf = new IDF()
       .setInputCol("hash")
-      .setOutputCol("idf-features")
+      .setOutputCol("features")
 
     val normalizer = new Normalizer()
       .setInputCol("idf-features")
@@ -115,7 +115,7 @@ class VectorCreationDF(sc: SparkContext) {
       .setOutputCol("features")
       .setK(1000)
 
-    val pipeline = new Pipeline().setStages(Array(tokenizer, ngram, htf, idf, pca))
+    val pipeline = new Pipeline().setStages(Array(tokenizer, ngram, htf, idf))
     val model = pipeline.fit(dataFrame)
 
     model.transform(dataFrame)
