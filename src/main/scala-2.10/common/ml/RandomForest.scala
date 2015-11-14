@@ -35,7 +35,7 @@ class RandomForest(sc: SparkContext) {
        .setLabelCol("indexedLabel")
        .setFeaturesCol("features")
        .setMaxBins(maxBin)
-       .setNumTrees(7)
+       .setNumTrees(5)
        .setMaxDepth(5)
 
      // Convert indexed labels back to original labels.

@@ -3,7 +3,7 @@ package walmart
 import common.ml.RandomForest
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.{SparkConf, SparkContext}
-import walmart.data.{FormatResult, VectorConversionToRdd, VectorCreationDF}
+import walmart.data.{FormatResult, VectorCreationDF}
 import walmart.evaluation.WalmartEvaluator
 
 
@@ -17,7 +17,7 @@ object Start {
       .setMaster("local[2]")
       .set("spark.driver.cores", "3")//.set("spark.sql.tungsten.enabled", "false")
 
-    val runningFinal = false
+    val runningFinal = true
 
     val sc = new SparkContext(conf)
 
@@ -27,7 +27,7 @@ object Start {
           new VectorCreationDF(sc).createTestVector("src/main/resources/test.csv"))
       } else {
         val train = new VectorCreationDF(sc).createTrainVector("src/main/resources/train.csv")
-        train.randomSplit(Array(0.7, 0.5))
+        train.randomSplit(Array(0.7, 0.3))
       }
 
 
@@ -37,17 +37,16 @@ object Start {
     // Make predictions.
     val predictions = model.transform(testData)
 
-    predictions.coalesce(1).select("probability","probabilityWithLabel")
-      .write.format("json")
-      .mode(SaveMode.Overwrite)
-      .option("header", "true")
-      .save("src/main/resources/finalResult2")
-
     if (!runningFinal) {
       val evaluator = new WalmartEvaluator
       evaluator.evaluate(predictions)
     } else {
-      new FormatResult(sc).format(predictions)
+      //new FormatResult(sc).format(predictions)
+      predictions.select("VisitNumber", "probability").coalesce(1)
+        .write.mode(SaveMode.Overwrite)
+            .format("com.databricks.spark.csv")
+            .option("header", "true")
+            .save("src/main/resources/submissionResult2")
     }
   }
 }

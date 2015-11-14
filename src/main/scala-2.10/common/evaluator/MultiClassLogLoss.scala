@@ -37,8 +37,7 @@ class MultiClassLogLoss(override val uid: String) extends Evaluator {
     val result = dataset.select($(predictionCol), $(labelCol), $(probabilityCol))
       .map { row =>
         val prob = row.getAs[DenseVector](2)
-        if(row.getDouble(0) == row.getDouble(1)) 1 * log(prob(row.getDouble(1).toInt))
-        else 0
+        1 * log(prob(row.getDouble(1).toInt))
     }
 
     -result.sum()/n
