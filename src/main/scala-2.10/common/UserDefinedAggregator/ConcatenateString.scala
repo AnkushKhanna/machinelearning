@@ -13,7 +13,7 @@ class ConcatenateString(column: String) extends UserDefinedAggregateFunction {
   )
 
   override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-    buffer(0) = buffer.getAs[String](0) + " " + input.getAs[String](0).replaceAll(",", "").replaceAll(" ", "")
+    buffer(0) = buffer.getAs[String](0) + " " + input.getAs[String](0).replaceAll(",", "")//.replaceAll(" ", "")
 
   }
 

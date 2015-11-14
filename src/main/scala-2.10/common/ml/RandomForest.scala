@@ -3,17 +3,19 @@ package common.ml
 import common.transformer.IndexToOrderProbability
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{PipelineModel, Pipeline}
-import org.apache.spark.ml.classification.RandomForestClassifier
+import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier, RandomForestClassifier}
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer, VectorIndexer}
+import org.apache.spark.mllib.tree.DecisionTree
 import org.apache.spark.sql.DataFrame
+import walmart.data.FormatResult
 
 class RandomForest(sc: SparkContext) {
-   def fit(data: DataFrame): PipelineModel = {
+   def fit(data: DataFrame, test: DataFrame) = {
      println("**************************************************************" +
        "DECISION TREE" +
        "********************************************************************")
 
-     val maxBin = 100
+     val maxBin = 2
      // Index labels, adding metadata to the label column.
      // Fit on whole dataset to include all labels in index.
      val labelIndexer = new StringIndexer()
@@ -31,7 +33,7 @@ class RandomForest(sc: SparkContext) {
      // Train a DecisionTree model.
      val dt = new RandomForestClassifier()
        .setLabelCol("indexedLabel")
-       .setFeaturesCol("indexedFeatures")
+       .setFeaturesCol("features")
        .setMaxBins(maxBin)
        .setNumTrees(5)
        .setMaxDepth(5)
@@ -50,7 +52,7 @@ class RandomForest(sc: SparkContext) {
 
      // Chain indexers and tree in a Pipeline
      val pipeline = new Pipeline()
-       .setStages(Array(labelIndexer, featureIndexer, dt, labelConverter, probabilityConverter))
+       .setStages(Array(labelIndexer, dt, labelConverter, probabilityConverter))
 
      // Train model.  This also runs the indexers.
      pipeline.fit(data)
