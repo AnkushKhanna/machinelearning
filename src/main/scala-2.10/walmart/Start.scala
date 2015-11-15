@@ -17,7 +17,7 @@ object Start {
       .setMaster("local[2]")
       .set("spark.driver.cores", "3")//.set("spark.sql.tungsten.enabled", "false")
 
-    val runningFinal = true
+    val runningFinal = false
 
     val sc = new SparkContext(conf)
 

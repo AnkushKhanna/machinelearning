@@ -4,9 +4,8 @@ import common.UserDefinedAggregator.{AlwaysFirst, ConcatenateString}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature._
-import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{Column, DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext}
 
 object start {
   def main(args: Array[String]) {
@@ -47,13 +46,15 @@ class VectorCreationDF(sc: SparkContext) {
 
     val concatenate = new ConcatenateString("DepartmentDescription")
     val tripType = new AlwaysFirst("TripType")
+    val dayType = new AlwaysFirst("Weekday")
 
     val dataFrameCount = addScanCountToDepartmentDesciption(dataFrame)
 
     val groupedDataFrame = dataFrameCount.groupBy("VisitNumber")
       .agg(
         concatenate(dataFrameCount.col("DepartmentDescriptionWithCount")).as("Agg-DepartmentDescription"),
-        tripType(dataFrameCount.col("TripType")).as("label")
+        tripType(dataFrameCount.col("TripType")).as("label"),
+        dayType(dataFrameCount.col("Weekday")).as("Day")
       )
 
     val features = transform(groupedDataFrame)
@@ -65,12 +66,13 @@ class VectorCreationDF(sc: SparkContext) {
     val dataFrame = load(path)
 
     val concatenate = new ConcatenateString("DepartmentDescription")
-
+    val dayType = new AlwaysFirst("Weekday")
     val dataFrameCount = addScanCountToDepartmentDesciption(dataFrame)
 
     val groupedDataFrame = dataFrameCount.groupBy("VisitNumber")
       .agg(
-        concatenate(dataFrameCount.col("DepartmentDescription")).as("Agg-DepartmentDescription")
+        concatenate(dataFrameCount.col("DepartmentDescription")).as("Agg-DepartmentDescription"),
+        dayType(dataFrameCount.col("Weekday")).as("Day")
       )
 
     val features = transform(groupedDataFrame)
@@ -104,20 +106,44 @@ class VectorCreationDF(sc: SparkContext) {
 
     val idf = new IDF()
       .setInputCol("hash")
-      .setOutputCol("features")
+      .setOutputCol("dd-features")
 
-    val normalizer = new Normalizer()
-      .setInputCol("idf-features")
-      .setOutputCol("n-features")
-
-    val pca = new PCA()
-      .setInputCol("idf-features")
-      .setOutputCol("features")
-      .setK(1000)
+//    val normalizer = new Normalizer()
+//      .setInputCol("idf-features")
+//      .setOutputCol("n-features")
+//
+//    val pca = new PCA()
+//      .setInputCol("idf-features")
+//      .setOutputCol("features")
+//      .setK(1000)
 
     val pipeline = new Pipeline().setStages(Array(tokenizer, ngram, htf, idf))
     val model = pipeline.fit(dataFrame)
 
-    model.transform(dataFrame)
+    val dataSetDD = model.transform(dataFrame)
+
+
+    val tokenizerW = new Tokenizer()
+      .setInputCol("Day")
+      .setOutputCol("dayT")
+
+    val htfW = new HashingTF()
+      .setInputCol("dayT")
+      .setOutputCol("dayVector")
+      .setNumFeatures(7)
+
+
+    val pipelineW = new Pipeline().setStages(Array(tokenizerW, htfW))
+
+    val modelW = pipelineW.fit(dataSetDD)
+
+    val dataSetDDW = modelW.transform(dataSetDD)
+
+    val assembler = new VectorAssembler()
+      .setInputCols(Array("dd-features", "dayVector"))
+      .setOutputCol("features")
+
+    assembler.transform(dataSetDDW)
+
   }
 }
