@@ -31,7 +31,7 @@ class ConcatenateString(column: String) extends UserDefinedAggregateFunction {
 
   override def deterministic: Boolean = true
 
-  override def evaluate(buffer: Row): Any = buffer.getAs[String](0).split(" ").sortWith(_ < _).mkString(" ")
+  override def evaluate(buffer: Row): Any = buffer.getAs[String](0).split(" ").sortWith(_ < _).mkString(" ").trim
 
   override def dataType: DataType = StringType
 }

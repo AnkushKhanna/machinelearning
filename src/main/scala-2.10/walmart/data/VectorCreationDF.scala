@@ -1,11 +1,15 @@
 package walmart.data
 
+import java.io.{FileInputStream, ObjectInputStream}
+
 import common.UserDefinedAggregator.{AlwaysFirst, ConcatenateString}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SQLContext}
+
+import scala.collection.mutable.Map
 
 object start {
   def main(args: Array[String]) {
@@ -40,21 +44,39 @@ class VectorCreationDF(sc: SparkContext) {
     )
   }
 
+
+
   def createTrainVector(path: String): DataFrame = {
 
+    val is = new ObjectInputStream(new FileInputStream("src/main/resources/FineLineBuck"))
+    val fineLineMap: Map[Int, Double] = is.readObject().asInstanceOf[Map[Int, Double]]
+
+    val brc = sc.broadcast(fineLineMap);
+
+    val toBucket = udf ((fineline: Int) => {
+      brc.value.get(fineline).getOrElse(-1.0)
+    })
+
     val dataFrame = load(path)
+    val dataFrameDD = dataFrame.filter(dataFrame("DepartmentDescription") !== "NULL")
+
+    val dataFrameWNull = dataFrame.filter(dataFrame("FinelineNumber").isNotNull)
+
+    val dataFrameDDBucket = dataFrameWNull.withColumn("fineline_bucket", toBucket(dataFrameWNull("FinelineNumber")))
 
     val concatenate = new ConcatenateString("DepartmentDescription")
+    val concatenateFLN = new ConcatenateString("fineline_bucket")
     val tripType = new AlwaysFirst("TripType")
     val dayType = new AlwaysFirst("Weekday")
 
-    val dataFrameCount = addScanCountToDepartmentDesciption(dataFrame)
+    val dataFrameCount = addScanCountToDepartmentDesciption(dataFrameDDBucket)
 
     val groupedDataFrame = dataFrameCount.groupBy("VisitNumber")
       .agg(
         concatenate(dataFrameCount.col("DepartmentDescriptionWithCount")).as("Agg-DepartmentDescription"),
         tripType(dataFrameCount.col("TripType")).as("label"),
-        dayType(dataFrameCount.col("Weekday")).as("Day")
+        dayType(dataFrameCount.col("Weekday")).as("Day"),
+        concatenateFLN(dataFrameCount.col("fineline_bucket")).as("FLN-C")
       )
 
     val features = transform(groupedDataFrame)
@@ -65,9 +87,11 @@ class VectorCreationDF(sc: SparkContext) {
   def createTestVector(path: String): DataFrame = {
     val dataFrame = load(path)
 
+    val dataFrameDD = dataFrame.filter(dataFrame("DepartmentDescription") !== "NULL")
+
     val concatenate = new ConcatenateString("DepartmentDescription")
     val dayType = new AlwaysFirst("Weekday")
-    val dataFrameCount = addScanCountToDepartmentDesciption(dataFrame)
+    val dataFrameCount = addScanCountToDepartmentDesciption(dataFrameDD)
 
     val groupedDataFrame = dataFrameCount.groupBy("VisitNumber")
       .agg(
@@ -102,7 +126,7 @@ class VectorCreationDF(sc: SparkContext) {
     val htf = new HashingTF()
       .setInputCol("ngrams")
       .setOutputCol("hash")
-      .setNumFeatures(2000)
+      .setNumFeatures(1000)
 
     val idf = new IDF()
       .setInputCol("hash")
@@ -132,18 +156,38 @@ class VectorCreationDF(sc: SparkContext) {
       .setOutputCol("dayVector")
       .setNumFeatures(7)
 
-
     val pipelineW = new Pipeline().setStages(Array(tokenizerW, htfW))
 
     val modelW = pipelineW.fit(dataSetDD)
 
     val dataSetDDW = modelW.transform(dataSetDD)
 
+
+    val tokenizerF = new Tokenizer()
+      .setInputCol("FLN-C")
+      .setOutputCol("FLN-CT")
+
+    val htfF = new HashingTF()
+      .setInputCol("FLN-CT")
+      .setOutputCol("FLN-features")
+      .setNumFeatures(12)
+
+    val idfF = new IDF()
+      .setInputCol("FLN-Vector")
+      .setOutputCol("FLN-features")
+
+    val pipelineF = new Pipeline().setStages(Array(tokenizerF, htfF))
+
+    val modelF = pipelineF.fit(dataSetDD)
+
+    val dataSetDDF = modelF.transform(dataSetDDW)
+
+
     val assembler = new VectorAssembler()
-      .setInputCols(Array("dd-features", "dayVector"))
+      .setInputCols(Array("dd-features", "dayVector", "FLN-features"))
       .setOutputCol("features")
 
-    assembler.transform(dataSetDDW)
+    assembler.transform(dataSetDDF)
 
   }
 }
