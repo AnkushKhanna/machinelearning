@@ -1,8 +1,8 @@
-package common.UserDefinedAggregator
+package common.userdefinedaggregator
 
-import org.apache.spark.sql.{Column, Row}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction}
-import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType}
+import org.apache.spark.sql.types.{DataType, StringType, StructField, StructType}
 
 class ConcatenateMultipleColumn(columns: Seq[StructField]) extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = StructType(columns)

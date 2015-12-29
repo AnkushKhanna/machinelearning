@@ -1,6 +1,6 @@
 package airbnb.data.session
 
-import common.UserDefinedAggregator.{ConcatenateMultipleColumn, ReturnFirst}
+import common.userdefinedaggregator.{ConcatenateMultipleColumn, ReturnFirst}
 import common.operations.{Read, Write}
 import common.transfomration.{THashing, TIDF, TTokenize, Transform}
 import org.apache.spark.SparkContext

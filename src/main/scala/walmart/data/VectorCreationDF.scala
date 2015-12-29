@@ -2,7 +2,7 @@ package walmart.data
 
 import java.io.{FileInputStream, ObjectInputStream}
 
-import common.UserDefinedAggregator.{ReturnFirst, ConcatenateString}
+import common.userdefinedaggregator.{ReturnFirst, ConcatenateString}
 import common.transfomration.{THashing, TTokenize, Transform}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{PipelineStage, Pipeline}
