@@ -4,7 +4,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction}
 import org.apache.spark.sql.types.{DataType, StringType, StructField, StructType}
 
-class AlwaysFirst(column: String)  extends UserDefinedAggregateFunction {
+class ReturnFirst(column: String)  extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = StructType(
     StructField(column, StringType) :: Nil
   )
