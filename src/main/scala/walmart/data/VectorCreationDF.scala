@@ -2,7 +2,7 @@ package walmart.data
 
 import java.io.{FileInputStream, ObjectInputStream}
 
-import common.UserDefinedAggregator.{AlwaysFirst, ConcatenateString}
+import common.UserDefinedAggregator.{ReturnFirst, ConcatenateString}
 import common.transfomration.{THashing, TTokenize, Transform}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{PipelineStage, Pipeline}
@@ -67,8 +67,8 @@ class VectorCreationDF(sc: SparkContext) {
     val concatenate = new ConcatenateString("DepartmentDescription")
     val concatenateFLNBucket = new ConcatenateString("fineline_bucket")
     val concatenateFLN = new ConcatenateString("FinelineNumber")
-    val tripType = new AlwaysFirst("TripType")
-    val dayType = new AlwaysFirst("Weekday")
+    val tripType = new ReturnFirst("TripType")
+    val dayType = new ReturnFirst("Weekday")
 
     val dataFrameCount = addScanCountToDepartmentDesciption(dataFrameDDBucket)
 
@@ -92,7 +92,7 @@ class VectorCreationDF(sc: SparkContext) {
     val dataFrameDD = dataFrame.filter(dataFrame("DepartmentDescription") !== "NULL")
 
     val concatenate = new ConcatenateString("DepartmentDescription")
-    val dayType = new AlwaysFirst("Weekday")
+    val dayType = new ReturnFirst("Weekday")
     val dataFrameCount = addScanCountToDepartmentDesciption(dataFrameDD)
 
     val groupedDataFrame = dataFrameCount.groupBy("VisitNumber")
@@ -176,7 +176,7 @@ class VectorCreationDF(sc: SparkContext) {
 
 
     val array = new Transform with TTokenize with THashing
-    val pipeline1 = array.transform(Array(), "FLN-C", "FLN-features1", 11)
+    val pipeline1 = array.apply(Array(), "FLN-C", "FLN-features1", 11)
 
     val pipelineF1 = new Pipeline().setStages(pipeline1._1)
     val modelF1 = pipelineF1.fit(dataSetDD)
