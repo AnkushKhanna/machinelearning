@@ -27,6 +27,7 @@ class Department(sc: SparkContext) {
 
     // SMALL LIST LETS DO IT IN NON SPARK WORLD
     val orderedDepartmentList = v2.takeOrdered(v2.count().toInt).toList
+
     var acc: Int = 0
     val departmentMap = Map[String, Int]()
     for (d <- orderedDepartmentList) {
@@ -37,6 +38,8 @@ class Department(sc: SparkContext) {
 
     val oos = new ObjectOutputStream(new FileOutputStream("src/main/resources/Department"))
     oos.writeObject(departmentMap)
+    oos.flush
+    oos.close
     departmentMap
   }
 }
