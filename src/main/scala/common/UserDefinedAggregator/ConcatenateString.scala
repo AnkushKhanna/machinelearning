@@ -1,11 +1,8 @@
 package common.UserDefinedAggregator
 
-import java.nio.charset.Charset
-
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction}
 import org.apache.spark.sql.types.{DataType, StringType, StructField, StructType}
-import org.apache.spark.unsafe.types.UTF8String
 
 class ConcatenateString(column: String) extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = StructType(
