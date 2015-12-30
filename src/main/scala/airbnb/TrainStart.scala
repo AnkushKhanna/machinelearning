@@ -20,7 +20,7 @@ object TrainStart {
     else {
      new VectorCreationTrain(sc).createVector(
         "/Users/ankushkhanna/Documents/kaggle/airbnb/train_users_2.csv",
-        "/Users/ankushkhanna/Documents/kaggle/airbnb/vectorSession.csv/part-00000")
+        "/Users/ankushkhanna/Documents/kaggle/airbnb/vectorSession")
     }
   }
 }

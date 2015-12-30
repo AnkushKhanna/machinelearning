@@ -6,7 +6,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import walmart.data.VectorCreation
 
 
-class LogisticRegression(sc: SparkContext) {
+class LogisticRegressionC(sc: SparkContext) {
   def fit = {
 
 

@@ -9,7 +9,7 @@ import org.apache.spark.mllib.tree.DecisionTree
 import org.apache.spark.sql.DataFrame
 import walmart.data.FormatResult
 
-class RandomForest(sc: SparkContext) {
+class RandomForestC(sc: SparkContext) {
    def fit(data: DataFrame, test: DataFrame) = {
      println("**************************************************************" +
        "DECISION TREE" +

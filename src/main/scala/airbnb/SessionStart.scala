@@ -20,7 +20,7 @@ object SessionStart {
       new VectorCreationSession(sc).createSessionVector(
         "/Users/ankushkhanna/Documents/kaggle/airbnb/",
         "sessions.csv",
-        "vectorSession.csv")
+        "vectorSession")
     }
   }
 }
