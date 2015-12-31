@@ -1,6 +1,6 @@
 package walmart
 
-import common.ml.RandomForest
+import common.ml.RandomForestC
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.{SparkConf, SparkContext}
 import walmart.data.{FormatResult, VectorCreationDF}
@@ -31,7 +31,7 @@ object Start {
       }
 
 
-    val decisionTree = new RandomForest(sc)
+    val decisionTree = new RandomForestC(sc)
     val model = decisionTree.fit(trainingData, testData)
 
     // Make predictions.
