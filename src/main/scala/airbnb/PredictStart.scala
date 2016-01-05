@@ -22,7 +22,6 @@ object PredictStart {
       val sqlContext = new SQLContext(sc)
       val trainSessions = sqlContext.read.load("/Users/ankushkhanna/Documents/kaggle/airbnb/train_session")
 
-      //val finalValues = Array[Tuple3[Double, Double, Double]]()
       val finalValues =
         for {i <- 0.3 to 0.9 by 0.1
              Array(trainingData, testData, crossValidationData) = trainSessions.randomSplit(Array(i - 0.2, 1.0 - i, 0.2))

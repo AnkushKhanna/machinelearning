@@ -5,7 +5,7 @@ import common.operations.{Clean, Read, Write}
 import common.transfomration.{THashing, TTokenize, Transform}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.feature.{Normalizer, VectorAssembler}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.sql.{SaveMode, DataFrame, SQLContext, functions}
 
@@ -16,7 +16,7 @@ class VectorCreationTrain(sc: SparkContext) {
     //val trainNoNDF = train.filter((train("country_destination") !== "NDF") || (train("country_destination") !== "US"))
 
     //Cleaning
-    val train1 = train.withColumn("language_sanitized", Clean.remove("-unknown-")(train.col("language"))).drop(train.col("language"))
+    val train1 = train.withColumn("language_sanitized", Clean.remove("-unknown-", "")(train.col("language"))).drop(train.col("language"))
 
     //Transformation
     val transform = new Transform with TTokenize with THashing
@@ -54,7 +54,7 @@ class VectorCreationTrain(sc: SparkContext) {
 
     val output = assembler.transform(train_session_zeros)
 
-    //Write.csv("/Users/ankushkhanna/Documents/kaggle/airbnb/train_session", output.select("id", "features"))
+    Write.csv("/Users/ankushkhanna/Documents/kaggle/airbnb/train_session_csv", output.select("id", "features", "country_destination"))
     output.select("id", "features", "country_destination").coalesce(1).write.mode(SaveMode.Overwrite).save("/Users/ankushkhanna/Documents/kaggle/airbnb/train_session")
   }
 

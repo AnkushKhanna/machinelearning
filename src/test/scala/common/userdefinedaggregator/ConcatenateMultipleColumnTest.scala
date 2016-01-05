@@ -6,10 +6,10 @@ import org.apache.spark.sql.types.{StringType, StructField}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 @RunWith(classOf[JUnitRunner])
-class ConcatenateMultipleColumnTest extends FunSuite with BeforeAndAfter {
+class ConcatenateMultipleColumnTest extends FunSuite with BeforeAndAfterAll {
 
   private val master = "local[1]"
   private val appName = "test-multiple-Column"
@@ -17,7 +17,7 @@ class ConcatenateMultipleColumnTest extends FunSuite with BeforeAndAfter {
   private var sqlContext: SQLContext = _
   private var sc: SparkContext = _
 
-  before {
+  override protected def beforeAll {
     val conf = new SparkConf()
       .setMaster(master)
       .setAppName(appName)
@@ -26,11 +26,12 @@ class ConcatenateMultipleColumnTest extends FunSuite with BeforeAndAfter {
     sqlContext = new SQLContext(sc)
   }
 
-  after {
+  override protected def afterAll {
     if (sc != null) {
       sc.stop()
     }
   }
+
   test("concatenate multiple columns concatenate correctly") {
 
     val sessions = sqlContext.createDataFrame(Seq(

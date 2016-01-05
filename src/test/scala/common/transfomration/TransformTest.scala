@@ -5,9 +5,9 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.{SparkConf, SparkContext}
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, FunSuite}
 
-class TransformTest extends FunSuite with BeforeAndAfter {
+class TransformTest extends FunSuite with BeforeAndAfterAll {
 
   private val master = "local[1]"
   private val appName = "test-transform"
@@ -16,7 +16,7 @@ class TransformTest extends FunSuite with BeforeAndAfter {
   private var sc: SparkContext = _
   private var data: DataFrame = _
 
-  before {
+  override protected def beforeAll {
     val conf = new SparkConf()
       .setMaster(master)
       .setAppName(appName)
@@ -32,7 +32,7 @@ class TransformTest extends FunSuite with BeforeAndAfter {
     )).toDF("id", "action")
   }
 
-  after {
+  override protected def afterAll {
     if (sc != null) {
       sc.stop()
     }
