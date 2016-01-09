@@ -37,19 +37,22 @@ class VectorCreationTrain(sc: SparkContext) {
     val train_session = train10.join(sessions, train10("id") === sessions("user_id"), joinType = "left_outer")
 
     val removeNullVector = functions.udf((v: Vector) => {
-      if(v == null){
-        Vectors.zeros(Helper.sessionAction+Helper.sessiondeviceType)
-      }else {
+      if (v == null) {
+        Vectors.zeros(Helper.sessionAction + Helper.sessionDeviceType +1)
+      } else {
         v
       }
     })
 
-    val train_session_zeros = train_session.withColumn("session-features-sanitized", removeNullVector(train_session.col("session-features"))).drop(train_session.col("session-features"))
+    val train_session_zeros = train_session.withColumn("session-features-sanitized", removeNullVector(train_session.col("scaled-session-features"))).drop(train_session.col("scaled-session-features"))
 
     val assembler = new VectorAssembler()
-      .setInputCols(Array("signup_method-features", "language_sanitized-features",
-                          "affiliate_channel-features", "affiliate_provider-features", "first_affiliate_tracked-features",
-                          "signup_app-features", "first_device_type-features", "first_browser-features", "session-features-sanitized"))
+      .setInputCols(
+        Array
+             ("signup_method-features", "language_sanitized-features",
+              "affiliate_channel-features", "affiliate_provider-features", "first_affiliate_tracked-features",
+              "signup_app-features", "first_device_type-features", "first_browser-features",
+              "session-features-sanitized"))
       .setOutputCol("features")
 
     val output = assembler.transform(train_session_zeros)

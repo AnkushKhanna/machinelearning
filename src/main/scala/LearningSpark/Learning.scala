@@ -2,12 +2,13 @@ package LearningSpark
 
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.feature._
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.sql.SQLContext
 
 object Learning {
   def main(args: Array[String]) {
-    vectorAssembler
+    //vectorAssembler
+    OneHotEncoder
   }
 
   val sqlContext = new SQLContext(new SparkContext("local[1]", "test"))
@@ -43,12 +44,12 @@ object Learning {
 
   def OneHotEncoder = {
     val df = sqlContext.createDataFrame(Seq(
-      (0, "a"),
-      (1, "b"),
-      (2, "c"),
-      (3, "a"),
-      (4, "a"),
-      (5, "c")
+      (0, "a dsd sdsd"),
+      (1, "a dsd sdsd"),
+      (2, "c fff"),
+      (3, "a dfdd"),
+      (4, "a fff"),
+      (5, "c jjjj")
     )).toDF("id", "category")
 
     val indexer = new StringIndexer()
@@ -60,6 +61,7 @@ object Learning {
     val encoder = new OneHotEncoder().setInputCol("categoryIndex").
       setOutputCol("categoryVec")
     val encoded = encoder.transform(indexed)
+    println (encoded.head().getAs[Vector]("categoryVec").size)
     encoded.select("id", "categoryVec").foreach(println)
   }
 
@@ -90,5 +92,20 @@ object Learning {
       .setOutputCol("features")
     val output = assembler.transform(dataset)
     println(output.select("features", "clicked").first())
+  }
+
+  def ployExpan = {
+    val data = Array(
+      Vectors.dense(-2.0, 2.3),
+      Vectors.dense(0.0, 0.0),
+      Vectors.dense(0.6, -1.1)
+    )
+    val df = sqlContext.createDataFrame(data.map(Tuple1.apply)).toDF("features")
+    val polynomialExpansion = new PolynomialExpansion()
+      .setInputCol("features")
+      .setOutputCol("polyFeatures")
+      .setDegree(2)
+    val polyDF = polynomialExpansion.transform(df)
+    polyDF.select("polyFeatures").take(3).foreach(println)
   }
 }

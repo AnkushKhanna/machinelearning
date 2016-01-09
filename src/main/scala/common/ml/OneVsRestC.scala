@@ -5,7 +5,7 @@ import org.apache.spark.ml.classification.{LogisticRegression, OneVsRest}
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
 import org.apache.spark.sql.DataFrame
 
-class OneVsRestC {
+class OneVsRestC(regulaization: Double) {
   def fit(train: DataFrame, labelCol: String, featureCol: String, indexedLabelCol: String, predictionLabel: String) = {
 
     val labelIndexer = new StringIndexer()
@@ -16,7 +16,7 @@ class OneVsRestC {
     val ovr = new OneVsRest()
       .setLabelCol(indexedLabelCol)
       .setFeaturesCol(featureCol)
-      .setClassifier(new LogisticRegression())
+      .setClassifier(new LogisticRegression().setRegParam(regulaization))
 
     val labelConverter = new IndexToString()
       .setInputCol("prediction")

@@ -6,7 +6,7 @@ import common.operations.{Clean, Read, Write}
 import common.transfomration.{THashing, TIDF, TTokenize, Transform}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.feature.{Normalizer, MinMaxScaler, StandardScaler, VectorAssembler}
+import org.apache.spark.ml.feature._
 import org.apache.spark.sql.{SaveMode, functions}
 import org.apache.spark.sql.types.{StringType, StructField}
 
@@ -15,21 +15,31 @@ class VectorCreationSession(sc: SparkContext) {
   def createSessionVector(path: String, inputPath: String, outputPath: String) = {
     val sessions = Read.csv(path + inputPath, sc)
 
-    val sessions1 = sessions.withColumn("action_sanitized", Clean.remove("-unknown-", "-1")(sessions.col("action"))).drop(sessions.col("action"))
-      .withColumn("action_type_sanitized", Clean.remove("-unknown-", "-1")(sessions.col("action_type"))).drop(sessions.col("action_type"))
-      .withColumn("action_detail_sanitized", Clean.remove("-unknown-", "-1")(sessions.col("action_detail"))).drop(sessions.col("action_detail"))
+    val splits = Array(Double.NegativeInfinity, 0.1, 60, 300, 600, 1800, 3600, 18000, 36000, 864000, 6048000, Double.PositiveInfinity)
+
+    val bucketizer = new Bucketizer().
+      setInputCol("secs_elapsed").
+      setOutputCol("buck_secs_elapsed").
+      setSplits(splits)
+
+    val sessionSecBuck = bucketizer.transform(sessions)
+
+    val sessions1 = sessionSecBuck.withColumn("action_sanitized", Clean.remove("-unknown-", "-1")(sessionSecBuck.col("action"))).drop(sessionSecBuck.col("action"))
+      .withColumn("action_type_sanitized", Clean.remove("-unknown-", "-1")(sessionSecBuck.col("action_type"))).drop(sessionSecBuck.col("action_type"))
+      .withColumn("action_detail_sanitized", Clean.remove("-unknown-", "-1")(sessionSecBuck.col("action_detail"))).drop(sessionSecBuck.col("action_detail"))
 
     val concAction = new ConcatenateMultipleColumn(
       StructField("action_sanitized", StringType) ::
         StructField("action_type_sanitized", StringType) ::
-        StructField("action_detail_sanitized", StringType) :: Nil)
+        StructField("action_detail_sanitized", StringType) ::
+        StructField("buck_secs_elapsed", StringType) :: Nil)
 
     val deviceType = new ReturnFirst("device_type")
 
     val count = new Count("device_type")
 
     val groupedSessions = sessions1.groupBy("user_id").agg(
-      concAction(sessions1.col("action_sanitized"), sessions1.col("action_type_sanitized"), sessions1.col("action_detail_sanitized")).as("agg_action"),
+      concAction(sessions1.col("action_sanitized"), sessions1.col("action_type_sanitized"), sessions1.col("action_detail_sanitized"), sessions1.col("buck_secs_elapsed")).as("agg_action"),
       deviceType(sessions1.col("device_type")).as("agg_device_first"),
       count(sessions1.col("device_type")).as("count")
     )
@@ -42,7 +52,7 @@ class VectorCreationSession(sc: SparkContext) {
 
     val transformDevice = new Transform with TTokenize with THashing
 
-    val pipelineDevice = new Pipeline().setStages(transformDevice.apply(Array(), "agg_device_first", "device-features", Helper.sessiondeviceType)._1)
+    val pipelineDevice = new Pipeline().setStages(transformDevice.apply(Array(), "agg_device_first", "device-features", Helper.sessionDeviceType)._1)
     val modelDevice = pipelineDevice.fit(dataAction)
     val dataDevice = modelDevice.transform(dataAction)
 
@@ -58,7 +68,7 @@ class VectorCreationSession(sc: SparkContext) {
 
     val output = scaler.transform(vectorAssembler)
 
-    Write.csv(path + outputPath+".csv", output.select("user_id", "session-features", "scaled-session-features"))
-    output.coalesce(1).select("user_id", "session-features").write.mode(SaveMode.Overwrite).save(path + outputPath)
+    //Write.csv(path + outputPath+".csv", output.select("user_id", "session-features", "scaled-session-features"))
+    output.coalesce(1).select("user_id", "session-features", "scaled-session-features").write.mode(SaveMode.Overwrite).save(path + outputPath)
   }
 }
