@@ -27,10 +27,10 @@ object PredictStart {
 
       val Array(trainingData, testData, crossValidationData) = trainSessions.randomSplit(Array(0.6, 0.2, 0.2))
       //Polynomial expansion
-      val finalValuePoly = calculatePloyExpansionTerm(trainingData, crossValidationData, 1)
-      finalValuePoly.foreach {
-        case (i: Int, errorTrain: Double, errorTest: Double) => println(i + "  " + errorTrain + "  " + errorTest)
-      }
+//      val finalValuePoly = calculatePloyExpansionTerm(trainingData, crossValidationData, 1)
+//      finalValuePoly.foreach {
+//        case (i: Int, errorTrain: Double, errorTest: Double) => println(i + "  " + errorTrain + "  " + errorTest)
+//      }
       //REGULARIZATION
       //
       //      val finalValuesRegularization = calculateRegularizationTerm(trainingData, testData, 0.0)
@@ -39,11 +39,11 @@ object PredictStart {
       //      }
 
       //LEARNING CURVE
-      //      val finalValueLearningCurve = calculateLearningCurve(trainSessions, 0.0)
-      //
-      //      finalValueLearningCurve.foreach {
-      //        case (i: Double, errorTrain: Double, errorCV: Double) => println(i + "  " + errorTrain + "  " + errorCV)
-      //      }
+      val finalValueLearningCurve = calculateLearningCurve(trainSessions, 0.0)
+
+      finalValueLearningCurve.foreach {
+        case (i: Double, errorTrain: Double, errorCV: Double) => println(i + "  " + errorTrain + "  " + errorCV)
+      }
     }
 
     def calculatePloyExpansionTerm(trainingData: DataFrame, crossValidationData: DataFrame, polyTerm: Int): List[(Int, Double, Double)] = {

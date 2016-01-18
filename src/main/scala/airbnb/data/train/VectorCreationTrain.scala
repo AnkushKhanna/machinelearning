@@ -38,7 +38,7 @@ class VectorCreationTrain(sc: SparkContext) {
 
     val removeNullVector = functions.udf((v: Vector) => {
       if (v == null) {
-        Vectors.zeros(Helper.sessionAction + Helper.sessionDeviceType +1)
+        Vectors.zeros((2*Helper.sessionAction) + Helper.sessionDeviceType +1)
       } else {
         v
       }

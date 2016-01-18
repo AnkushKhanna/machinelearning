@@ -1,6 +1,6 @@
 package airbnb
 
 object Helper {
-  val sessionAction = 500
+  val sessionAction = 2000
   val sessionDeviceType = 50
 }

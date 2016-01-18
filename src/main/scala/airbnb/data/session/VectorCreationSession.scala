@@ -28,18 +28,24 @@ class VectorCreationSession(sc: SparkContext) {
       .withColumn("action_type_sanitized", Clean.remove("-unknown-", "-1")(sessionSecBuck.col("action_type"))).drop(sessionSecBuck.col("action_type"))
       .withColumn("action_detail_sanitized", Clean.remove("-unknown-", "-1")(sessionSecBuck.col("action_detail"))).drop(sessionSecBuck.col("action_detail"))
 
-    val concAction = new ConcatenateMultipleColumn(
+    val concActionWithBuck = new ConcatenateMultipleColumn(
       StructField("action_sanitized", StringType) ::
         StructField("action_type_sanitized", StringType) ::
         StructField("action_detail_sanitized", StringType) ::
         StructField("buck_secs_elapsed", StringType) :: Nil)
+
+    val concAction = new ConcatenateMultipleColumn(
+      StructField("action_sanitized", StringType) ::
+        StructField("action_type_sanitized", StringType) ::
+        StructField("action_detail_sanitized", StringType) :: Nil)
 
     val deviceType = new ReturnFirst("device_type")
 
     val count = new Count("device_type")
 
     val groupedSessions = sessions1.groupBy("user_id").agg(
-      concAction(sessions1.col("action_sanitized"), sessions1.col("action_type_sanitized"), sessions1.col("action_detail_sanitized"), sessions1.col("buck_secs_elapsed")).as("agg_action"),
+      concActionWithBuck(sessions1.col("action_sanitized"), sessions1.col("action_type_sanitized"), sessions1.col("action_detail_sanitized"), sessions1.col("buck_secs_elapsed")).as("agg_action"),
+      concAction(sessions1.col("action_sanitized"), sessions1.col("action_type_sanitized"), sessions1.col("action_detail_sanitized")).as("agg_action_wo_buck"),
       deviceType(sessions1.col("device_type")).as("agg_device_first"),
       count(sessions1.col("device_type")).as("count")
     )
@@ -48,16 +54,21 @@ class VectorCreationSession(sc: SparkContext) {
 
     val pipelineAction = new Pipeline().setStages(transformAction.apply(Array(), "agg_action", "action-features", Helper.sessionAction)._1)
     val modelAction = pipelineAction.fit(groupedSessions)
-    val dataAction = modelAction.transform(groupedSessions)
+    val dataAction = modelAction.transform(groupedSessions).drop("agg_action")
+
+    val pipelineActionWoBuck = new Pipeline().setStages(transformAction.apply(Array(), "agg_action_wo_buck", "action-features_wo_buck", Helper.sessionAction)._1)
+    val modelActionWoBuck = pipelineActionWoBuck.fit(dataAction)
+    val dataActionWoBuck = modelActionWoBuck.transform(dataAction).drop("agg_action_wo_buck")
 
     val transformDevice = new Transform with TTokenize with THashing
 
     val pipelineDevice = new Pipeline().setStages(transformDevice.apply(Array(), "agg_device_first", "device-features", Helper.sessionDeviceType)._1)
-    val modelDevice = pipelineDevice.fit(dataAction)
-    val dataDevice = modelDevice.transform(dataAction)
+    val modelDevice = pipelineDevice.fit(dataActionWoBuck)
+    val dataDevice = modelDevice.transform(dataActionWoBuck).drop("agg_device_first")
+
 
     val assembler = new VectorAssembler()
-      .setInputCols(Array("action-features", "device-features", "count"))
+      .setInputCols(Array("action-features", "action-features_wo_buck", "device-features", "count"))
       .setOutputCol("session-features")
 
     val vectorAssembler = assembler.transform(dataDevice)

@@ -62,7 +62,7 @@ object Learning {
       setOutputCol("categoryVec")
     val encoded = encoder.transform(indexed)
     println (encoded.head().getAs[Vector]("categoryVec").size)
-    encoded.select("id", "categoryVec").foreach(println)
+    encoded.select("id", "category", "categoryVec").foreach(println)
   }
 
   def bucketizer() = {
